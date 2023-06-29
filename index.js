@@ -31,6 +31,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("msg", ({ msg , room }) => {
-    io.emit("new_msg", msg);
+    socket.to(room).emit("new_msg", msg);
   });
 });

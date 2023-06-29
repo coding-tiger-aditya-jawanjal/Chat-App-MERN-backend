@@ -51,7 +51,7 @@ exports.startSingleChat = async (req, res) => {
         .json({ msg: `Error in startSingleChat , opponent not found !` });
     }
     const singleChatExists = await Chat.findOne({users:opponentExists._id});
-    if(singleChatExists){
+    if(singleChatExists?.users.find(e=>e._id === req.user._id)){
       return res.status(200).json({ msg: `Chat Already Exists .`, chat: singleChatExists });
     }
     const chat = new Chat({
@@ -88,28 +88,53 @@ exports.getAllChats = async (req, res) => {
 };
 
 exports.getSingleChat = async (req,res) =>{
+
   try {
-    let chatExists = await Chat.findOne({_id:req.params.id}).populate({
-      path:'latestMessage',
-      populate:{
-        path:'senderId',
-        select:'name email pic'
-      }
-    }).populate({
-      path:'messages',
-      populate:{
-        path:'senderId',
-        select:'name email pic'
-      }
-    }).populate({
-      path:'users',
-      select:'name email pic'
-    })
-    if(!chatExists){
-      return res.status(400).json({ msg: `No Single Chat !`});
-    }
-    res.status(200).json({ msg: `Single Chat Fetched !`, chat:chatExists });
+    const chat = await Chat.find({ users: req.user._id , _id:req.params.id})
+      .populate("users",'name email pic').populate('latestMessage')
+      .populate({
+        path: "messages",
+        populate: {
+          path: "senderId",
+          select: "name email pic",
+        },
+      }).populate('admin','name email pic').sort({'createdAt':-1});
+    res.status(200).json({ msg: `Single chat Fetched !`, chats: chat });
   } catch (err) {
-    res.status(400).json({ msg: `Error in getAllChats !`, err: err.message });
+    res.status(400).json({ msg: `Error in getSingleChats !`, err: err.message });
   }
+
+
+
+
+
+
+
+
+  // try {
+  //   let chatExists = await Chat.findOne({_id:req.params.id}).populate({
+  //     path:'latestMessage',
+  //     populate:{
+  //       path:'senderId',
+  //       select:'name email pic'
+  //     }
+  //   }).populate({
+  //     path:'messages',
+  //     populate:{
+  //       path:'senderId',
+  //       select:'name email pic'
+  //     }
+  //   }).populate({
+  //     path:'users',
+  //     select:'name email pic'
+  //   })
+  //   if(!chatExists){
+  //     return res.status(400).json({ msg: `No Single Chat !`});
+  //   }
+  //   if(chatExists.users.find(e=>e._id === req.user._id)) {
+  //     res.status(200).json({ msg: `Single Chat Fetched !`, chat:chatExists });
+  //   }
+  // } catch (err) {
+  //   res.status(400).json({ msg: `Error in getAllChats !`, err: err.message });
+  // }
 }
